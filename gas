@@ -1,0 +1,1810 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>أنور أبوقصيصة - إدارة مخزن ونقطة بيع غاز الطهي</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap');
+    * {
+      font-family: 'Cairo', system-ui, -apple-system, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    /* إخفاء أسهم الأرقام الافتراضية المزعجة */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
+    /* تأثير تمييز الحقل المفعل لتسهيل القراءة */
+    .num-input:focus {
+      background-color: #0f172a !important;
+      border-color: #f59e0b !important;
+      box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.35) !important;
+      outline: none;
+      transform: scale(1.04);
+      z-index: 10;
+    }
+    .text-input:focus {
+      border-color: #f59e0b !important;
+      box-shadow: 0 0 0 2px rgba(245, 158, 11, 0.25) !important;
+      outline: none;
+    }
+    @media print {
+      .no-print { display: none !important; }
+      body { background: white !important; color: black !important; }
+      .print-box { border: 1px solid #ccc !important; box-shadow: none !important; background: white !important; }
+    }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen pb-28 md:pb-12 selection:bg-amber-500 selection:text-slate-950">
+
+  <!-- إشعار التنبيه العائم -->
+  <div id="toast" class="fixed top-4 left-1/2 -translate-x-1/2 z-50 bg-amber-500 text-slate-950 font-black px-6 py-2.5 rounded-full shadow-2xl flex items-center gap-2 border-2 border-amber-300 transition-all duration-300 opacity-0 pointer-events-none -translate-y-5">
+    <i data-lucide="info" class="w-5 h-5"></i>
+    <span id="toast-text">تمت العملية بنجاح</span>
+  </div>
+
+  <!-- الهيدر وشريط الحالة العلوي -->
+  <header class="bg-slate-900 border-b border-slate-800 sticky top-0 z-40 shadow-lg backdrop-blur-md bg-opacity-95 no-print">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="bg-gradient-to-tr from-amber-600 to-amber-400 p-2 rounded-2xl shadow-md shadow-amber-500/20 text-slate-950">
+          <i data-lucide="flame" class="w-7 h-7"></i>
+        </div>
+        <div>
+          <h1 class="text-xl md:text-2xl font-black tracking-tight text-amber-400 flex items-center gap-2">
+            أنور أبوقصيصة
+            <span class="text-[11px] bg-amber-500/15 text-amber-300 border border-amber-500/30 px-2 py-0.5 rounded-full font-bold">
+              نقطة ومخزن غاز الطهي
+            </span>
+          </h1>
+          <p class="text-xs text-slate-400">إدخال سلس وسريع للجرد اليومي، الورديات، والتحصيل</p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2 flex-wrap">
+        <!-- اختيار التاريخ -->
+        <div class="flex items-center gap-1.5 bg-slate-800 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-300">
+          <i data-lucide="calendar" class="w-4 h-4 text-amber-400"></i>
+          <input type="date" id="currentDateInput" class="bg-transparent text-white focus:outline-none cursor-pointer text-xs" />
+        </div>
+
+        <!-- تبديل الصلاحية -->
+        <button id="toggleRoleBtn" class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20">
+          <i data-lucide="shield-check" class="w-4 h-4" id="roleIcon"></i>
+          <span id="roleText">المالك (كامل الصلاحيات)</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- شريط المؤشرات الحية -->
+    <div class="bg-slate-900/80 border-t border-slate-800/80 px-4 py-2">
+      <div class="max-w-7xl mx-auto flex items-center justify-between text-xs overflow-x-auto gap-4 py-0.5">
+        <div class="flex items-center gap-1.5 shrink-0">
+          <span class="text-slate-400">المباع اليوم:</span>
+          <span id="headerTotalSold" class="bg-amber-500/20 text-amber-300 font-black px-2 py-0.5 rounded-md border border-amber-500/30">
+            0 أسطوانة
+          </span>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <span class="text-slate-400">ملان بالمخزن:</span>
+          <span id="headerFullStock" class="bg-emerald-500/20 text-emerald-300 font-bold px-2 py-0.5 rounded-md">0</span>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <span class="text-slate-400">فاضي بالمخزن:</span>
+          <span id="headerEmptyStock" class="bg-blue-500/20 text-blue-300 font-bold px-2 py-0.5 rounded-md">0</span>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <span class="text-slate-400">🏭 في شركة التعبئة:</span>
+          <span id="headerAtCompany" class="bg-purple-500/20 text-purple-300 font-bold px-2 py-0.5 rounded-md">0</span>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <span class="text-slate-400">🔢 إجمالي الأسطوانات:</span>
+          <span id="headerAllCylinders" class="bg-slate-800 text-white font-black px-2.5 py-0.5 rounded-md border border-slate-700">0</span>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- شريط التبويبات الرئيسي -->
+  <nav class="max-w-7xl mx-auto px-4 mt-4 no-print">
+    <div class="grid grid-cols-3 sm:grid-cols-7 gap-1.5 bg-slate-900 p-1.5 rounded-2xl border border-slate-800">
+      <button onclick="switchTab('inventory')" class="tab-btn flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-bold transition-all bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20" data-tab="inventory">
+        <i data-lucide="package" class="w-4 h-4"></i>
+        <span>جرد الغاز والتعبئة</span>
+      </button>
+
+      <button onclick="switchTab('accessories')" class="tab-btn flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-bold transition-all text-slate-400 hover:bg-slate-800/60" data-tab="accessories">
+        <i data-lucide="gauge" class="w-4 h-4"></i>
+        <span>المنظم والخرطوش</span>
+      </button>
+
+      <button onclick="switchTab('swaps')" class="tab-btn flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-bold transition-all text-slate-400 hover:bg-slate-800/60" data-tab="swaps">
+        <i data-lucide="arrow-right-left" class="w-4 h-4"></i>
+        <span>التبديل والأمانات</span>
+      </button>
+
+      <button onclick="switchTab('collections')" class="tab-btn flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-bold transition-all text-slate-400 hover:bg-slate-800/60 relative" data-tab="collections">
+        <i data-lucide="receipt" class="w-4 h-4"></i>
+        <span>التحصيل والآجل</span>
+        <span id="unpaidBadge" class="hidden absolute top-1 right-2 bg-rose-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center font-bold">0</span>
+      </button>
+
+      <button onclick="switchTab('expenses')" class="tab-btn flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-bold transition-all text-slate-400 hover:bg-slate-800/60" data-tab="expenses">
+        <i data-lucide="dollar-sign" class="w-4 h-4"></i>
+        <span>المنصرفات</span>
+      </button>
+
+      <button onclick="switchTab('report')" class="tab-btn flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-bold transition-all text-slate-400 hover:bg-slate-800/60" data-tab="report">
+        <i data-lucide="file-text" class="w-4 h-4"></i>
+        <span>التقرير المالي</span>
+      </button>
+
+      <button onclick="switchTab('history')" class="tab-btn flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-bold transition-all text-slate-400 hover:bg-slate-800/60 col-span-3 sm:col-span-1" data-tab="history">
+        <i data-lucide="clock" class="w-4 h-4"></i>
+        <span>الأرشيف</span>
+      </button>
+    </div>
+  </nav>
+
+  <!-- المحتوى الرئيسي -->
+  <main class="max-w-7xl mx-auto px-4 mt-6">
+
+    <!-- ============================================================= -->
+    <!-- 1. صفحة جرد الغاز الثابت، الورديات، والتعبئة -->
+    <!-- ============================================================= -->
+    <section id="tab-inventory" class="space-y-6">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+        <div>
+          <h2 class="text-base md:text-lg font-bold text-white flex items-center gap-2">
+            <i data-lucide="layers" class="w-5 h-5 text-amber-400"></i>
+            جدول جرد الغاز الثابت، الورديات، وأسطوانات شركة التعبئة
+          </h2>
+          <p class="text-xs text-slate-400 mt-1">
+            ⚡ <strong>تسهيل الإدخال:</strong> بمجرد لمس أي رقم يتم تظليله تلقائياً لكتابة القيمة الجديدة مباشرة، وتفتح لوحة الأرقام الكبيرة على هاتفك.
+          </p>
+        </div>
+
+        <button onclick="rollOverToNextDay()" class="w-full md:w-auto bg-slate-800 hover:bg-slate-700 text-amber-300 border border-amber-500/30 px-4 py-2.5 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition active:scale-95">
+          <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
+          ترحيل الأرصدة لبدء يوم جديد
+        </button>
+      </div>
+
+      <!-- الفلاتر والبحث -->
+      <div class="flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div class="flex items-center gap-1.5 overflow-x-auto w-full sm:w-auto pb-1" id="categoryFilters">
+          <button onclick="setCategoryFilter('الكل')" class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-black bg-amber-500 text-slate-950" data-cat="الكل">الكل</button>
+          <button onclick="setCategoryFilter('عادي')" class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-400 hover:bg-slate-800 border border-slate-800" data-cat="عادي">عادي</button>
+          <button onclick="setCategoryFilter('45 كجم')" class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-400 hover:bg-slate-800 border border-slate-800" data-cat="45 كجم">45 كجم</button>
+          <button onclick="setCategoryFilter('25 كجم')" class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-400 hover:bg-slate-800 border border-slate-800" data-cat="25 كجم">25 كجم</button>
+          <button onclick="setCategoryFilter('5 كجم')" class="cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-400 hover:bg-slate-800 border border-slate-800" data-cat="5 كجم">5 كجم</button>
+        </div>
+
+        <div class="relative w-full sm:w-72">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2"></i>
+          <input type="text" id="inventorySearch" oninput="renderInventoryTable()" placeholder="بحث سريع عن صنف..." class="text-input w-full bg-slate-900 border border-slate-800 rounded-xl pr-9 pl-3 py-2 text-xs text-white placeholder-slate-500 focus:outline-none transition" />
+        </div>
+      </div>
+
+      <!-- جدول الجرد المحسن للإدخال السلس -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+        <div class="overflow-x-auto">
+          <table class="w-full text-right border-collapse min-w-[1020px]">
+            <thead>
+              <tr class="bg-slate-950/90 text-slate-400 text-xs border-b border-slate-800 font-bold select-none">
+                <th class="p-3 w-10 text-center">#</th>
+                <th class="p-3">الصنف</th>
+                <th class="p-2 text-center text-emerald-400 bg-emerald-950/20">ملان (بداية)</th>
+                <th class="p-2 text-center text-blue-400 bg-blue-950/20">فاضي (بداية)</th>
+                <th class="p-2 text-center text-purple-400 bg-purple-950/20">في الشركة (بداية)</th>
+                <th class="p-2 text-center text-amber-300 bg-amber-500/10">مباع و (1)</th>
+                <th class="p-2 text-center text-amber-300 bg-amber-500/10">مباع و (2)</th>
+                <th class="p-2 text-center text-emerald-300 bg-emerald-900/30">وارد ملان (شركة)</th>
+                <th class="p-2 text-center text-rose-300 bg-rose-950/30">مرسل فاضي (شركة)</th>
+                <th class="p-3 text-center font-black text-amber-400">إجمالي المباع</th>
+                <th class="p-2 text-center text-emerald-400 bg-emerald-950/30">ملان حالي</th>
+                <th class="p-2 text-center text-blue-400 bg-blue-950/30">فاضي حالي</th>
+                <th class="p-2 text-center text-purple-300 bg-purple-950/30">في الشركة الآن</th>
+                <th class="p-3 text-center font-black text-white">العدد الكلي</th>
+              </tr>
+            </thead>
+            <tbody id="inventoryTableBody" class="divide-y divide-slate-800/60 text-xs">
+              <!-- ينشأ برمجياً بواسطة JavaScript -->
+            </tbody>
+            <tfoot id="inventoryTableFoot" class="bg-slate-950 font-black text-white text-xs border-t-2 border-slate-700">
+              <!-- مجاميع الجدول -->
+            </tfoot>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================= -->
+    <!-- 2. صفحة جرد المنظمات وبيع الخرطوش بالمتر -->
+    <!-- ============================================================= -->
+    <section id="tab-accessories" class="space-y-6 hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        
+        <!-- قسم جرد أجهزة المنظمات -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="font-bold text-white text-base flex items-center gap-2">
+              <i data-lucide="gauge" class="w-5 h-5 text-amber-400"></i>
+              جرد ومبيعات أجهزة المنظمات
+            </h3>
+            <span id="regSoldBadge" class="text-xs bg-amber-500/10 text-amber-300 px-2 py-0.5 rounded-md font-bold">0 حبة</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-right text-xs border-collapse">
+              <thead>
+                <tr class="bg-slate-950 text-slate-400 border-b border-slate-800 font-bold select-none">
+                  <th class="p-2.5">نوع المنظم</th>
+                  <th class="p-2 text-center">رصيد البداية</th>
+                  <th class="p-2 text-center">وارد جديد</th>
+                  <th class="p-2 text-center">مباع و (1)</th>
+                  <th class="p-2 text-center">مباع و (2)</th>
+                  <th class="p-2 text-center">المتبقي</th>
+                  <th class="p-2 text-center">السعر</th>
+                </tr>
+              </thead>
+              <tbody id="regulatorsTableBody" class="divide-y divide-slate-800">
+                <!-- ينشأ برمجياً -->
+              </tbody>
+            </table>
+          </div>
+
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
+            <span class="text-slate-400">إجمالي إيراد بيع المنظمات:</span>
+            <span id="totalRegRevenueText" class="text-amber-400 font-black text-sm">0 ج.س</span>
+          </div>
+        </div>
+
+        <!-- قسم بيع خرطوش الغاز بالمتر -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-800 pb-3">
+            <h3 class="font-bold text-white text-base flex items-center gap-2">
+              <i data-lucide="ruler" class="w-5 h-5 text-amber-400"></i>
+              جرد وبيع خرطوش الغاز (بالمتر)
+            </h3>
+            <span id="hoseRemainingBadge" class="text-xs bg-emerald-500/10 text-emerald-400 px-2 py-0.5 rounded-md font-bold">0 متر متبقي</span>
+          </div>
+
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+              <label class="block text-slate-400 mb-1 font-semibold">رصيد البداية (متر)</label>
+              <input type="number" id="hoseInitMeters" onfocus="this.select()" inputmode="numeric" oninput="updateHoseData()" min="0" class="num-input w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-white font-bold text-sm text-center" />
+            </div>
+
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+              <label class="block text-slate-400 mb-1 font-semibold">وارد رول جديد (متر)</label>
+              <input type="number" id="hoseAddedMeters" onfocus="this.select()" inputmode="numeric" oninput="updateHoseData()" min="0" class="num-input w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-emerald-400 font-bold text-sm text-center" />
+            </div>
+
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+              <label class="block text-slate-400 mb-1 font-semibold">سعر المتر (ج.س)</label>
+              <input type="number" id="hosePricePerMeter" onfocus="this.select()" inputmode="numeric" oninput="updateHoseData()" min="0" class="num-input w-full bg-slate-900 border border-slate-700 rounded-lg p-2 text-amber-400 font-bold text-sm text-center" />
+            </div>
+
+            <div class="bg-slate-950 p-3 rounded-xl border border-amber-500/20">
+              <label class="block text-amber-300 mb-1 font-semibold">مباع وردية 1 (متر)</label>
+              <input type="number" id="hoseShift1Meters" onfocus="this.select()" inputmode="numeric" oninput="updateHoseData()" min="0" class="num-input w-full bg-slate-900 border border-amber-500/40 rounded-lg p-2 text-amber-300 font-bold text-sm text-center" />
+            </div>
+
+            <div class="bg-slate-950 p-3 rounded-xl border border-amber-500/20">
+              <label class="block text-amber-300 mb-1 font-semibold">مباع وردية 2 (متر)</label>
+              <input type="number" id="hoseShift2Meters" onfocus="this.select()" inputmode="numeric" oninput="updateHoseData()" min="0" class="num-input w-full bg-slate-900 border border-amber-500/40 rounded-lg p-2 text-amber-300 font-bold text-sm text-center" />
+            </div>
+
+            <div class="bg-slate-950 p-3 rounded-xl border border-slate-800">
+              <label class="block text-slate-400 mb-1 font-semibold">إجمالي المباع بالمتر</label>
+              <div id="hoseTotalSoldText" class="text-base font-black text-amber-400 py-1 text-center">0 متر</div>
+            </div>
+          </div>
+
+          <div class="bg-slate-950 p-3 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
+            <span class="text-slate-400">إجمالي إيراد بيع الخرطوش اليوم:</span>
+            <span id="hoseTotalRevenueText" class="text-amber-400 font-black text-sm">0 ج.س</span>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================================================= -->
+    <!-- 3. صفحة تبديل أسطوانة بماركة أخرى + الأمانات ومسبق الدفع -->
+    <!-- ============================================================= -->
+    <section id="tab-swaps" class="space-y-6 hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+        <!-- استبدال الماركات -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <div class="border-b border-slate-800 pb-3">
+            <h3 class="font-bold text-white text-base flex items-center gap-2">
+              <i data-lucide="arrow-right-left" class="w-5 h-5 text-amber-400"></i>
+              تبديل نوع أسطوانة بنوع آخر (استبدال الأصناف)
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">
+              خرج ملان نوع (أ) ودخل فاضي نوع (ب). التطبيق يقوم بضبط الأرصدة تلقائياً لكل نوع.
+            </p>
+          </div>
+
+          <form id="swapForm" onsubmit="handleSwapSubmit(event)" class="space-y-3.5 text-xs">
+            <div>
+              <label class="block text-slate-400 mb-1 font-semibold">اسم الزبون / الملاحظة</label>
+              <input type="text" id="swapCustomer" placeholder="اسم الزبون..." class="text-input w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-rose-400 mb-1 font-semibold">خارج ملان من المخزن *</label>
+                <select id="swapOutCylinder" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white"></select>
+              </div>
+
+              <div>
+                <label class="block text-emerald-400 mb-1 font-semibold">داخل فاضي للمخزن *</label>
+                <select id="swapInCylinder" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white"></select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label class="block text-slate-400 mb-1 font-semibold">العدد</label>
+                <input type="number" id="swapQty" onfocus="this.select()" inputmode="numeric" min="1" value="1" class="num-input w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white font-bold text-center" />
+              </div>
+
+              <div>
+                <label class="block text-slate-400 mb-1 font-semibold">فرق السعر (إن وجد)</label>
+                <input type="number" id="swapDifferenceFee" onfocus="this.select()" inputmode="numeric" min="0" value="0" class="num-input w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-amber-400 font-bold text-center" />
+              </div>
+
+              <div>
+                <label class="block text-slate-400 mb-1 font-semibold">الوردية</label>
+                <select id="swapShift" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white">
+                  <option value="1">وردية 1</option>
+                  <option value="2">وردية 2</option>
+                </select>
+              </div>
+            </div>
+
+            <button type="submit" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-2.5 rounded-xl shadow transition text-xs flex items-center justify-center gap-1.5 active:scale-95">
+              <i data-lucide="refresh-cw" class="w-4 h-4"></i>
+              تسجيل التبديل وضبط الجرد
+            </button>
+          </form>
+
+          <div id="swapLogsList" class="space-y-2 mt-4 max-h-52 overflow-y-auto">
+            <!-- قائمة التبديلات -->
+          </div>
+        </div>
+
+        <!-- أمانات ومسبق الدفع -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4">
+          <div class="border-b border-slate-800 pb-3">
+            <h3 class="font-bold text-white text-base flex items-center gap-2">
+              <i data-lucide="gift" class="w-5 h-5 text-emerald-400"></i>
+              استلام أمانة / تسليم مسبق الدفع (بدون كاش)
+            </h3>
+            <p class="text-xs text-slate-400 mt-0.5">
+              تسجيل حركة الأسطوانات بدقة لحماية المخزن دون إحداث خلل في مطابقة الكاش بالدرج.
+            </p>
+          </div>
+
+          <form id="specialForm" onsubmit="handleSpecialSubmit(event)" class="space-y-3.5 text-xs">
+            <div>
+              <label class="block text-slate-400 mb-1 font-semibold">نوع الحركة *</label>
+              <select id="specialType" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white">
+                <option value="prepaid_delivery">تسليم ملان لزبون مسبق الدفع (خروج ملان بدون قبض كاش)</option>
+                <option value="empty_deposit">استلام فاضي كأمانة فقط (دخول فاضي بدون إعطاء ملان)</option>
+              </select>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-slate-400 mb-1 font-semibold">اسم الزبون / الجهة</label>
+                <input type="text" id="specialCustomer" placeholder="اسم الزبون..." class="text-input w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white" />
+              </div>
+
+              <div>
+                <label class="block text-slate-400 mb-1 font-semibold">نوع الأسطوانة</label>
+                <select id="specialCylinderType" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white"></select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-slate-400 mb-1 font-semibold">العدد</label>
+                <input type="number" id="specialQty" onfocus="this.select()" inputmode="numeric" min="1" value="1" class="num-input w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white font-bold text-center" />
+              </div>
+
+              <div>
+                <label class="block text-slate-400 mb-1 font-semibold">ملاحظة أو رقم الإيصال</label>
+                <input type="text" id="specialNotes" placeholder="إيصال سابق..." class="text-input w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white" />
+              </div>
+            </div>
+
+            <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2.5 rounded-xl shadow transition text-xs flex items-center justify-center gap-1.5 active:scale-95">
+              <i data-lucide="check" class="w-4 h-4"></i>
+              تسجيل الحركة وضبط الأسطوانات
+            </button>
+          </form>
+
+          <div id="specialLogsList" class="space-y-2 mt-4 max-h-52 overflow-y-auto">
+            <!-- قائمة الأمانات -->
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================================================= -->
+    <!-- 4. صفحة سجل التحصيل والآجل (مع ميزة الشطب) -->
+    <!-- ============================================================= -->
+    <section id="tab-collections" class="space-y-6 hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- نموذج إضافة دين جديد -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg lg:col-span-1 h-fit">
+          <div class="flex items-center gap-2 mb-4 text-amber-400 font-bold border-b border-slate-800 pb-3">
+            <i data-lucide="plus" class="w-5 h-5"></i>
+            <span>تسجيل زبون آجل / دين جديد</span>
+          </div>
+
+          <form id="collectionForm" onsubmit="handleCollectionSubmit(event)" class="space-y-3.5 text-xs">
+            <div>
+              <label class="block text-slate-400 mb-1 font-semibold">اسم الزبون / الجهة *</label>
+              <input type="text" id="colCustomer" required placeholder="مثال: مطعم الأمانة أو الأستاذ عثمان" class="text-input w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white" />
+            </div>
+
+            <div>
+              <label class="block text-slate-400 mb-1 font-semibold">رقم الهاتف (اختياري)</label>
+              <input type="tel" id="colPhone" inputmode="tel" placeholder="09XXXXXXXX" class="text-input w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-slate-400 mb-1 font-semibold">نوع الأسطوانة</label>
+                <select id="colCylinderType" onchange="updateCollectionAmountAuto()" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white"></select>
+              </div>
+
+              <div>
+                <label class="block text-slate-400 mb-1 font-semibold">العدد</label>
+                <input type="number" id="colQty" onfocus="this.select()" inputmode="numeric" oninput="updateCollectionAmountAuto()" min="1" value="1" class="num-input w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white text-center font-bold" />
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-slate-400 mb-1 font-semibold">المبلغ الإجمالي المستحق (ج.س) *</label>
+              <input type="number" id="colAmount" onfocus="this.select()" inputmode="numeric" required class="num-input w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-amber-400 font-bold text-sm text-center" />
+            </div>
+
+            <div>
+              <label class="block text-slate-400 mb-1 font-semibold">ملاحظات أو موعد السداد</label>
+              <input type="text" id="colNotes" placeholder="وعد بالسداد غداً..." class="text-input w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white" />
+            </div>
+
+            <button type="submit" class="w-full bg-amber-500 hover:bg-amber-400 text-slate-950 font-black py-3 rounded-xl shadow transition flex items-center justify-center gap-2 text-sm active:scale-95">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              حفظ في قائمة التحصيل
+            </button>
+          </form>
+        </div>
+
+        <!-- جدول التحصيلات والشطب -->
+        <div class="lg:col-span-2 space-y-4">
+          <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+              <p class="text-xs text-slate-400">إجمالي الديون المعلقة</p>
+              <p id="statTotalUnpaid" class="text-lg font-black text-rose-400 mt-1">0 ج.س</p>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl">
+              <p class="text-xs text-slate-400">ديون جديدة اليوم</p>
+              <p id="statNewDebtToday" class="text-lg font-black text-amber-400 mt-1">0 ج.س</p>
+            </div>
+            <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl col-span-2 sm:col-span-1">
+              <p class="text-xs text-slate-400">المحصل اليوم (المشطوب)</p>
+              <p id="statCollectedToday" class="text-lg font-black text-emerald-400 mt-1">0 ج.س</p>
+            </div>
+          </div>
+
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+            <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+              <h3 class="font-bold text-white text-sm flex items-center gap-2">
+                <i data-lucide="receipt" class="w-4 h-4 text-amber-400"></i>
+                سجل الفواتير الآجلة ومتابعة الشطب
+              </h3>
+              <span class="text-xs text-slate-400">اضغط (شطب) عند استلام المبلغ</span>
+            </div>
+
+            <div id="collectionsList" class="divide-y divide-slate-800">
+              <!-- ينشأ برمجياً -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================================================= -->
+    <!-- 5. صفحة المنصرفات اليومية -->
+    <!-- ============================================================= -->
+    <section id="tab-expenses" class="space-y-6 hidden">
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        <!-- نموذج تسجيل المنصرف -->
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-lg lg:col-span-1 h-fit">
+          <div class="flex items-center gap-2 mb-4 text-rose-400 font-bold border-b border-slate-800 pb-3">
+            <i data-lucide="dollar-sign" class="w-5 h-5"></i>
+            <span>تسجيل منصرف يومي جديد</span>
+          </div>
+
+          <form id="expenseForm" onsubmit="handleExpenseSubmit(event)" class="space-y-3.5 text-xs">
+            <div>
+              <label class="block text-slate-400 mb-1 font-semibold">بند المنصرف / الوصف *</label>
+              <input type="text" id="expTitle" required placeholder="فطور عمال، مشال، كهرباء، بنزين..." class="text-input w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white" />
+            </div>
+
+            <div>
+              <label class="block text-slate-400 mb-1 font-semibold">المبلغ (ج.س) *</label>
+              <input type="number" id="expAmount" onfocus="this.select()" inputmode="numeric" required min="1" placeholder="0" class="num-input w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-rose-400 font-bold text-sm text-center" />
+            </div>
+
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-slate-400 mb-1 font-semibold">التصنيف</label>
+                <select id="expCategory" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white">
+                  <option value="إعاشة">إعاشة ووجبات</option>
+                  <option value="عمالة">عمالة ومشال</option>
+                  <option value="خدمات">كهرباء ورصيد</option>
+                  <option value="صيانة">صيانة ونثريات</option>
+                  <option value="ترحيل">ترحيل وتعبئة</option>
+                  <option value="أخرى">أخرى</option>
+                </select>
+              </div>
+
+              <div>
+                <label class="block text-slate-400 mb-1 font-semibold">الوردية</label>
+                <select id="expShift" class="w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white">
+                  <option value="1">وردية 1</option>
+                  <option value="2">وردية 2</option>
+                </select>
+              </div>
+            </div>
+
+            <div>
+              <label class="block text-slate-400 mb-1 font-semibold">ملاحظات إضافية</label>
+              <input type="text" id="expNotes" placeholder="تفاصيل إضافية..." class="text-input w-full bg-slate-950 border border-slate-700 rounded-xl p-2.5 text-white" />
+            </div>
+
+            <button type="submit" class="w-full bg-rose-600 hover:bg-rose-500 text-white font-bold py-3 rounded-xl shadow transition flex items-center justify-center gap-2 text-sm active:scale-95">
+              <i data-lucide="plus" class="w-4 h-4"></i>
+              خصم وتسجيل المنصرف
+            </button>
+          </form>
+        </div>
+
+        <!-- جدول المنصرفات -->
+        <div class="lg:col-span-2 space-y-4">
+          <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl flex items-center justify-between">
+            <div>
+              <span class="text-xs text-slate-400">إجمالي منصرفات اليوم:</span>
+              <h3 id="statTotalExpenses" class="text-2xl font-black text-rose-400 mt-1">0 ج.س</h3>
+            </div>
+            <div class="bg-rose-500/10 text-rose-300 p-3 rounded-2xl border border-rose-500/20">
+              <i data-lucide="dollar-sign" class="w-6 h-6"></i>
+            </div>
+          </div>
+
+          <div class="bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-xl">
+            <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+              <h4 class="font-bold text-white text-sm">قائمة المنصرفات المسجلة اليوم</h4>
+            </div>
+
+            <div id="expensesList" class="divide-y divide-slate-800">
+              <!-- ينشأ برمجياً -->
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ============================================================= -->
+    <!-- 6. صفحة التقرير المالي والإقفال الشامل -->
+    <!-- ============================================================= -->
+    <section id="tab-report" class="space-y-6 hidden">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 flex flex-wrap items-center justify-between gap-3 no-print">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center gap-2">
+            <i data-lucide="file-text" class="w-5 h-5 text-amber-400"></i>
+            التقرير المالي والإقفال اليومي الشامل
+          </h2>
+          <p class="text-xs text-slate-400">
+            شامل مبيعات الغاز، المنظمات، خراطيش الغاز بالمتر، فروقات التبديل وتسوية الخزينة
+          </p>
+        </div>
+
+        <div class="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+          <button onclick="shareViaWhatsApp()" class="flex-1 sm:flex-initial bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 shadow transition active:scale-95">
+            <i data-lucide="share-2" class="w-4 h-4"></i>
+            مشاركة عبر الواتساب
+          </button>
+
+          <button onclick="window.print()" class="flex-1 sm:flex-initial bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-4 py-2 rounded-xl text-xs font-bold flex items-center justify-center gap-2 transition active:scale-95">
+            <i data-lucide="printer" class="w-4 h-4"></i>
+            طباعة
+          </button>
+
+          <button onclick="saveDailyReportSnapshot()" class="w-full sm:w-auto bg-amber-500 hover:bg-amber-400 text-slate-950 font-black px-4 py-2 rounded-xl text-xs flex items-center justify-center gap-2 shadow transition active:scale-95">
+            <i data-lucide="save" class="w-4 h-4"></i>
+            إقفال وحفظ التقرير
+          </button>
+        </div>
+      </div>
+
+      <!-- إدخال مبالغ الدفع الإلكتروني والنقدية -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 print-box">
+        <h3 class="text-sm font-bold text-amber-400 mb-4 flex items-center gap-2">
+          <i data-lucide="credit-card" class="w-4 h-4"></i>
+          إدخال مبالغ الدفع الإلكتروني والنقدية المستلمة بالدرج (لمس لتظليل الرقم مباشرة)
+        </h3>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs">
+          <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+            <label class="block text-slate-400 mb-1 font-semibold flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-rose-500"></span>
+              تطبيق بنكك (Bankak)
+            </label>
+            <input type="number" id="payBankak" onfocus="this.select()" inputmode="numeric" oninput="updatePaymentValues()" min="0" placeholder="0" class="num-input w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white font-bold text-base text-center" />
+          </div>
+
+          <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+            <label class="block text-slate-400 mb-1 font-semibold flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+              تطبيق فوري (Fawry)
+            </label>
+            <input type="number" id="payFawry" onfocus="this.select()" inputmode="numeric" oninput="updatePaymentValues()" min="0" placeholder="0" class="num-input w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white font-bold text-base text-center" />
+          </div>
+
+          <div class="bg-slate-950 p-3.5 rounded-xl border border-slate-800">
+            <label class="block text-slate-400 mb-1 font-semibold flex items-center gap-1.5">
+              <span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+              تطبيق أوكاش (O-Cash)
+            </label>
+            <input type="number" id="payOcash" onfocus="this.select()" inputmode="numeric" oninput="updatePaymentValues()" min="0" placeholder="0" class="num-input w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-white font-bold text-base text-center" />
+          </div>
+
+          <div class="bg-slate-950 p-3.5 rounded-xl border border-emerald-500/40">
+            <label class="block text-emerald-400 mb-1 font-semibold flex items-center gap-1.5">
+              <i data-lucide="wallet" class="w-3.5 h-3.5"></i>
+              الكاش الفعلي المستلم بالدرج *
+            </label>
+            <input type="number" id="payActualCash" onfocus="this.select()" inputmode="numeric" oninput="updatePaymentValues()" min="0" placeholder="0" class="num-input w-full bg-slate-900 border border-emerald-500/60 rounded-lg p-2.5 text-emerald-300 font-black text-base text-center" />
+          </div>
+        </div>
+      </div>
+
+      <!-- بطاقات الإحصاء المالي -->
+      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl print-box">
+          <span class="text-xs text-slate-400">إيراد أسطوانات الغاز</span>
+          <p id="repGasRevenue" class="text-xl font-black text-white mt-1">0 ج.س</p>
+          <div id="repGasSoldSubtitle" class="text-[10px] text-slate-400 mt-2">0 أسطوانة مباعة</div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl print-box">
+          <span class="text-xs text-slate-400">إيراد المنظمات والخرطوش</span>
+          <p id="repAccessoriesRevenue" class="text-xl font-black text-amber-400 mt-1">0 ج.س</p>
+          <div id="repAccessoriesSubtitle" class="text-[10px] text-slate-400 mt-2">منظمات وخراطيش وفروقات</div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl print-box">
+          <span class="text-xs text-slate-400">إجمالي الدفع الإلكتروني</span>
+          <p id="repElectronicTotal" class="text-xl font-black text-blue-400 mt-1">0 ج.س</p>
+          <div class="text-[10px] text-slate-400 mt-2">بنكك + فوري + أوكاش</div>
+        </div>
+
+        <div class="bg-slate-900 border border-slate-800 p-4 rounded-2xl print-box">
+          <span class="text-xs text-slate-400">المنصرفات + الآجل الجديد</span>
+          <p id="repExpensesAndDebts" class="text-xl font-black text-rose-400 mt-1">0 ج.س</p>
+          <div id="repExpensesSubtitle" class="text-[10px] text-slate-400 mt-2">منصرفات اليوم</div>
+        </div>
+      </div>
+
+      <!-- بطاقة مطابقة الخزينة النقدية -->
+      <div id="discrepancyBox" class="p-6 rounded-2xl border-2 transition-all bg-emerald-950/20 border-emerald-500/50 print-box">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+          <div>
+            <span class="text-xs font-bold text-slate-300">نتيجة إقفال الخزينة اليومية ومطابقة الكاش</span>
+            <div class="flex items-center gap-3 mt-1">
+              <h3 id="discrepancyTitle" class="text-2xl md:text-3xl font-black text-white flex items-center gap-2">
+                <i data-lucide="check-circle-2" class="w-8 h-8 text-emerald-400"></i>
+                مطابقة تامة 100% (صفر عجز)
+              </h3>
+            </div>
+            <p class="text-xs text-slate-400 mt-2">
+              الكاش المتوقع توريده: <strong id="repExpectedCash" class="text-slate-200">0 ج.س</strong> | 
+              الكاش الفعلي باليد: <strong id="repActualCash" class="text-slate-200">0 ج.س</strong>
+            </p>
+          </div>
+
+          <div class="text-left bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-xs space-y-1 w-full md:w-auto">
+            <div class="text-slate-400">صافي الأرباح والدخل لليوم:</div>
+            <div id="repNetIncome" class="text-xl font-black text-amber-400">0 ج.س</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============================================================= -->
+    <!-- 7. صفحة الأرشيف والسجلات السابقة -->
+    <!-- ============================================================= -->
+    <section id="tab-history" class="space-y-6 hidden">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5">
+        <h3 class="text-sm font-bold text-amber-400 mb-4 flex items-center gap-2">
+          <i data-lucide="clock" class="w-4 h-4"></i>
+          سجل التقارير اليومية المؤرشفة
+        </h3>
+
+        <div id="savedReportsList" class="space-y-3">
+          <!-- ينشأ برمجياً -->
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- شريط التنقل السفلي للموبايل -->
+  <div class="md:hidden fixed bottom-0 left-0 right-0 bg-slate-900 border-t border-slate-800 px-1 py-1.5 z-40 flex items-center justify-around shadow-2xl no-print">
+    <button onclick="switchTab('inventory')" class="mobile-nav-btn flex flex-col items-center gap-0.5 p-1.5 rounded-xl text-[10px] font-bold text-amber-400 bg-amber-500/10" data-tab="inventory">
+      <i data-lucide="package" class="w-4 h-4"></i>
+      <span>جرد الغاز</span>
+    </button>
+
+    <button onclick="switchTab('accessories')" class="mobile-nav-btn flex flex-col items-center gap-0.5 p-1.5 rounded-xl text-[10px] font-bold text-slate-400" data-tab="accessories">
+      <i data-lucide="gauge" class="w-4 h-4"></i>
+      <span>المنظم</span>
+    </button>
+
+    <button onclick="switchTab('swaps')" class="mobile-nav-btn flex flex-col items-center gap-0.5 p-1.5 rounded-xl text-[10px] font-bold text-slate-400" data-tab="swaps">
+      <i data-lucide="arrow-right-left" class="w-4 h-4"></i>
+      <span>التبديل</span>
+    </button>
+
+    <button onclick="switchTab('collections')" class="mobile-nav-btn flex flex-col items-center gap-0.5 p-1.5 rounded-xl text-[10px] font-bold text-slate-400" data-tab="collections">
+      <i data-lucide="receipt" class="w-4 h-4"></i>
+      <span>التحصيل</span>
+    </button>
+
+    <button onclick="switchTab('expenses')" class="mobile-nav-btn flex flex-col items-center gap-0.5 p-1.5 rounded-xl text-[10px] font-bold text-slate-400" data-tab="expenses">
+      <i data-lucide="dollar-sign" class="w-4 h-4"></i>
+      <span>المنصرفات</span>
+    </button>
+
+    <button onclick="switchTab('report')" class="mobile-nav-btn flex flex-col items-center gap-0.5 p-1.5 rounded-xl text-[10px] font-bold text-slate-400" data-tab="report">
+      <i data-lucide="file-text" class="w-4 h-4"></i>
+      <span>التقرير</span>
+    </button>
+  </div>
+
+  <!-- JavaScript التفاعلي فائق السلاسة والسرعة -->
+  <script>
+    const CYLINDER_DEFINITIONS = [
+      { id: 'total', name: 'توتال', category: 'عادي', defaultPrice: 15000, initF: 127, initE: 17, atComp: 20, s1: 1, s2: 0 },
+      { id: 'abarssi', name: 'ابرسى', category: 'عادي', defaultPrice: 15000, initF: 192, initE: 66, atComp: 45, s1: 0, s2: 0 },
+      { id: 'iran', name: 'ایران', category: 'عادي', defaultPrice: 15000, initF: 68, initE: 24, atComp: 15, s1: 0, s2: 0 },
+      { id: 'jadeed', name: 'جديد', category: 'عادي', defaultPrice: 15000, initF: 90, initE: 40, atComp: 10, s1: 8, s2: 1 },
+      { id: 'moaddal', name: 'معدل', category: 'عادي', defaultPrice: 15000, initF: 13, initE: 5, atComp: 2, s1: 2, s2: 0 },
+      { id: 'gadim', name: 'قديم', category: 'عادي', defaultPrice: 15000, initF: 22, initE: 1, atComp: 0, s1: 0, s2: 0 },
+      { id: 'gadreh', name: 'قادره', category: 'عادي', defaultPrice: 15000, initF: 118, initE: 62, atComp: 30, s1: 0, s2: 0 },
+      { id: 'taarah', name: 'طاره', category: 'عادي', defaultPrice: 15000, initF: 20, initE: 3, atComp: 5, s1: 0, s2: 0 },
+      { id: 'petrola', name: 'بترولا', category: 'عادي', defaultPrice: 15000, initF: 31, initE: 6, atComp: 8, s1: 2, s2: 0 },
+      { id: 'gazco', name: 'غازكو', category: 'عادي', defaultPrice: 15000, initF: 8, initE: 4, atComp: 0, s1: 2, s2: 0 },
+      { id: 'souda', name: 'سودا', category: 'عادي', defaultPrice: 15000, initF: 8, initE: 6, atComp: 2, s1: 0, s2: 0 },
+      { id: 'watanie', name: 'وطنيه', category: 'عادي', defaultPrice: 15000, initF: 0, initE: 1, atComp: 0, s1: 0, s2: 0 },
+      { id: 'masoora', name: 'ماسوره', category: 'عادي', defaultPrice: 15000, initF: 0, initE: 0, atComp: 0, s1: 0, s2: 0 },
+      { id: 'misriya', name: 'مصريه', category: 'عادي', defaultPrice: 15000, initF: 2, initE: 1, atComp: 0, s1: 0, s2: 0 },
+      { id: 'oil_rg', name: 'اويل ارجي', category: 'عادي', defaultPrice: 15000, initF: 7, initE: 1, atComp: 0, s1: 0, s2: 0 },
+      { id: 'bashaer', name: 'بشائر', category: 'عادي', defaultPrice: 15000, initF: 28, initE: 10, atComp: 5, s1: 0, s2: 0 },
+      { id: 'alnahla', name: 'النحله', category: 'عادي', defaultPrice: 15000, initF: 0, initE: 1, atComp: 0, s1: 0, s2: 0 },
+      { id: 'benta', name: 'بنتا', category: 'عادي', defaultPrice: 15000, initF: 3, initE: 1, atComp: 0, s1: 0, s2: 0 },
+      { id: 'sondos', name: 'سندس', category: 'عادي', defaultPrice: 15000, initF: 4, initE: 2, atComp: 0, s1: 0, s2: 0 },
+      { id: 'tareefi', name: 'طريفي', category: 'عادي', defaultPrice: 15000, initF: 2, initE: 0, atComp: 0, s1: 0, s2: 0 },
+      { id: 'fiber', name: 'فايبر', category: 'عادي', defaultPrice: 16000, initF: 11, initE: 0, atComp: 0, s1: 0, s2: 0 },
+
+      // 45 كجم
+      { id: 'aman_45', name: 'امان 45', category: '45 كجم', defaultPrice: 45000, initF: 1, initE: 0, atComp: 2, s1: 1, s2: 0 },
+      { id: 'gadreh_45', name: 'قادره 45', category: '45 كجم', defaultPrice: 45000, initF: 0, initE: 0, atComp: 0, s1: 0, s2: 0 },
+      { id: 'shell_45', name: 'شل 45', category: '45 كجم', defaultPrice: 45000, initF: 0, initE: 0, atComp: 0, s1: 0, s2: 0 },
+      { id: 'elneel_45', name: 'النيل 45', category: '45 كجم', defaultPrice: 45000, initF: 8, initE: 1, atComp: 4, s1: 8, s2: 1 },
+      { id: 'chernobyl_45', name: 'شرنوبل 45', category: '45 كجم', defaultPrice: 45000, initF: 2, initE: 0, atComp: 1, s1: 2, s2: 0 },
+
+      // 25 كجم و 16 كجم
+      { id: 'aman_25', name: 'امان 25', category: '25 كجم', defaultPrice: 28000, initF: 0, initE: 0, atComp: 0, s1: 0, s2: 0 },
+      { id: 'shell_25', name: 'شل 25', category: '25 كجم', defaultPrice: 28000, initF: 0, initE: 0, atComp: 0, s1: 0, s2: 0 },
+      { id: 'elneel_25', name: 'النيل 25', category: '25 كجم', defaultPrice: 28000, initF: 1, initE: 0, atComp: 1, s1: 1, s2: 1 },
+      { id: 'chernobyl_25', name: 'شرنوبل 25', category: '25 كجم', defaultPrice: 28000, initF: 2, initE: 0, atComp: 0, s1: 2, s2: 0 },
+      { id: 'iran_25', name: 'ایران 25', category: '25 كجم', defaultPrice: 28000, initF: 0, initE: 0, atComp: 0, s1: 0, s2: 0 },
+      { id: 'souda_25', name: 'سودا 25', category: '25 كجم', defaultPrice: 28000, initF: 0, initE: 0, atComp: 0, s1: 0, s2: 0 },
+      { id: 'gadreh_25', name: 'قادر 25', category: '25 كجم', defaultPrice: 28000, initF: 0, initE: 0, atComp: 0, s1: 0, s2: 0 },
+      { id: 'taarah_25', name: 'طاره 25', category: '25 كجم', defaultPrice: 28000, initF: 0, initE: 0, atComp: 0, s1: 0, s2: 0 },
+      { id: 'abarssi_25', name: 'ابرسى 25', category: '25 كجم', defaultPrice: 28000, initF: 0, initE: 0, atComp: 0, s1: 0, s2: 0 },
+      { id: 'abarssi_16', name: 'ابرسى 16', category: '25 كجم', defaultPrice: 20000, initF: 0, initE: 0, atComp: 0, s1: 0, s2: 0 },
+
+      // 5 كجم
+      { id: 'elneel_5', name: 'النيل 5', category: '5 كجم', defaultPrice: 7500, initF: 0, initE: 0, atComp: 0, s1: 0, s2: 0 },
+      { id: 'iran_5', name: 'ایران 5', category: '5 كجم', defaultPrice: 7500, initF: 0, initE: 0, atComp: 0, s1: 0, s2: 0 },
+      { id: 'aman_5', name: 'امان 5', category: '5 كجم', defaultPrice: 7500, initF: 0, initE: 0, atComp: 0, s1: 0, s2: 0 }
+    ];
+
+    const REGULATOR_DEFINITIONS = [
+      { id: 'reg_aadi_15', name: 'منظم عادي (15)', price: 12000, initStock: 18 },
+      { id: 'reg_iran_10', name: 'منظم إيراني أصلي (10)', price: 10000, initStock: 14 },
+      { id: 'reg_italy', name: 'منظم إيطالي مع مؤشر', price: 18000, initStock: 8 },
+      { id: 'reg_commercial', name: 'منظم ضغط عالي للمطاعم', price: 25000, initStock: 5 },
+      { id: 'gas_clamps', name: 'قفايز / مشابك خرطوش (حبة)', price: 1000, initStock: 50 }
+    ];
+
+    const appState = {
+      currentDate: new Date().toISOString().split('T')[0],
+      userRole: 'owner',
+      activeCategory: 'الكل',
+      inventory: {},
+      regulators: {},
+      hose: {
+        initMeters: 150,
+        addedMeters: 0,
+        shift1Meters: 6,
+        shift2Meters: 4,
+        pricePerMeter: 3000
+      },
+      swaps: [
+        { id: 'sw-1', date: '2026-09-02', customer: 'زبون عام', outCylinder: 'توتال', inCylinder: 'ابرسى', qty: 1, differenceFee: 0, shift: '1' }
+      ],
+      specials: [
+        { id: 'sp-1', date: '2026-09-02', type: 'prepaid_delivery', customer: 'مخبز الأمل', cylinderType: 'النيل 45', qty: 1, notes: 'إيصال الأمس' },
+        { id: 'sp-2', date: '2026-09-02', type: 'empty_deposit', customer: 'عثمان عبد الله', cylinderType: 'جديد', qty: 1, notes: 'أمانة فاضي' }
+      ],
+      collections: [
+        { id: 'col-1', date: '2026-09-01', customer: 'مطعم الأمانة - عثمان', phone: '0912345678', cylinderType: 'امان 45', qty: 2, amount: 90000, paid: false, paidDate: null, notes: 'سداد غداً' },
+        { id: 'col-2', date: '2026-09-01', customer: 'مخبز البركة', phone: '0922334455', cylinderType: 'النيل 45', qty: 1, amount: 45000, paid: true, paidDate: '2026-09-02', notes: 'تم الدفع كاش' }
+      ],
+      expenses: [
+        { id: 'exp-1', date: '2026-09-02', title: 'فطور وغداء العمال', amount: 8500, category: 'إعاشة', shift: '1', notes: 'وجبة الصباح' },
+        { id: 'exp-2', date: '2026-09-02', title: 'شحن رصيد وكهرباء المخزن', amount: 5000, category: 'خدمات', shift: '1', notes: 'عداد الدفع المقدم' },
+        { id: 'exp-3', date: '2026-09-02', title: 'مشال وتنزيل أسطوانات', amount: 12000, category: 'عمالة', shift: '2', notes: 'تفريغ عربة النيل' }
+      ],
+      payments: {
+        bankak: 180000,
+        fawry: 45000,
+        ocash: 0,
+        actualCash: 95000
+      },
+      savedReports: []
+    };
+
+    function initDefaultData() {
+      CYLINDER_DEFINITIONS.forEach(item => {
+        appState.inventory[item.id] = {
+          initFull: item.initF,
+          initEmpty: item.initE,
+          atCompany: item.atComp,
+          shift1Sold: item.s1,
+          shift2Sold: item.s2,
+          prepaidSold: 0,
+          receivedFull: 0,
+          sentEmpty: 0,
+          swapOut: 0,
+          swapIn: 0,
+          price: item.defaultPrice
+        };
+      });
+
+      REGULATOR_DEFINITIONS.forEach(r => {
+        appState.regulators[r.id] = {
+          initStock: r.initStock,
+          added: 0,
+          shift1Sold: 0,
+          shift2Sold: 0,
+          price: r.price
+        };
+      });
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById('toast');
+      const text = document.getElementById('toast-text');
+      text.innerText = message;
+      toast.classList.remove('opacity-0', '-translate-y-5', 'pointer-events-none');
+      setTimeout(() => {
+        toast.classList.add('opacity-0', '-translate-y-5', 'pointer-events-none');
+      }, 3000);
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll('main > section').forEach(sec => sec.classList.add('hidden'));
+      const activeSec = document.getElementById('tab-' + tabId);
+      if (activeSec) activeSec.classList.remove('hidden');
+
+      document.querySelectorAll('.tab-btn').forEach(btn => {
+        if (btn.getAttribute('data-tab') === tabId) {
+          btn.className = 'tab-btn flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-bold transition-all bg-amber-500 text-slate-950 shadow-md shadow-amber-500/20';
+        } else {
+          btn.className = 'tab-btn flex items-center justify-center gap-1.5 py-2.5 px-2 rounded-xl text-xs font-bold transition-all text-slate-400 hover:bg-slate-800/60';
+        }
+      });
+
+      document.querySelectorAll('.mobile-nav-btn').forEach(btn => {
+        if (btn.getAttribute('data-tab') === tabId) {
+          btn.className = 'mobile-nav-btn flex flex-col items-center gap-0.5 p-1.5 rounded-xl text-[10px] font-bold text-amber-400 bg-amber-500/10';
+        } else {
+          btn.className = 'mobile-nav-btn flex flex-col items-center gap-0.5 p-1.5 rounded-xl text-[10px] font-bold text-slate-400';
+        }
+      });
+
+      recalculateAndRender();
+    }
+
+    function setCategoryFilter(category) {
+      appState.activeCategory = category;
+      document.querySelectorAll('.cat-filter-btn').forEach(btn => {
+        if (btn.getAttribute('data-cat') === category) {
+          btn.className = 'cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-black bg-amber-500 text-slate-950';
+        } else {
+          btn.className = 'cat-filter-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-900 text-slate-400 hover:bg-slate-800 border border-slate-800';
+        }
+      });
+      renderInventoryTable();
+    }
+
+    // تعديل قيمة الغاز
+    function onGasFieldChange(itemId, field, value) {
+      const val = Math.max(0, parseInt(value) || 0);
+      if (!appState.inventory[itemId]) return;
+      appState.inventory[itemId][field] = val;
+      recalculateAndRender(false); // تحديث الحسابات دون إعادة بناء الحقل لفقدان التركيز
+    }
+
+    // دالة خطوة سريعة لتعديل العدد بالزر (+ أو -)
+    function stepGasField(itemId, field, delta) {
+      if (!appState.inventory[itemId]) return;
+      const current = appState.inventory[itemId][field] || 0;
+      const nextVal = Math.max(0, current + delta);
+      appState.inventory[itemId][field] = nextVal;
+      
+      const input = document.querySelector(`input[data-item="${itemId}"][data-field="${field}"]`);
+      if (input) input.value = nextVal;
+      
+      recalculateAndRender(false);
+    }
+
+    // دعم مفتاح Enter للانتقال السريع للحقل التالي
+    function handleInputKeydown(e) {
+      if (e.key === 'Enter') {
+        e.preventDefault();
+        const inputs = Array.from(document.querySelectorAll('.table-input'));
+        const currentIndex = inputs.indexOf(e.target);
+        if (currentIndex > -1 && currentIndex < inputs.length - 1) {
+          inputs[currentIndex + 1].focus();
+          inputs[currentIndex + 1].select();
+        }
+      }
+    }
+
+    function calculateTotals() {
+      let totalInitialFull = 0;
+      let totalInitialEmpty = 0;
+      let totalAtCompany = 0;
+      let totalShift1Sold = 0;
+      let totalShift2Sold = 0;
+      let totalSoldAll = 0;
+      let totalCurrentFull = 0;
+      let totalCurrentEmpty = 0;
+      let totalAllCylinders = 0;
+      let totalGasRevenue = 0;
+
+      CYLINDER_DEFINITIONS.forEach(item => {
+        const d = appState.inventory[item.id] || { initFull:0, initEmpty:0, atCompany:0, shift1Sold:0, shift2Sold:0, prepaidSold:0, receivedFull:0, sentEmpty:0, swapOut:0, swapIn:0, price: item.defaultPrice };
+        const regSold = (d.shift1Sold || 0) + (d.shift2Sold || 0);
+        const totalSoldWithPrepaid = regSold + (d.prepaidSold || 0);
+
+        const curFull = Math.max(0, (d.initFull || 0) + (d.receivedFull || 0) - (totalSoldWithPrepaid + (d.swapOut || 0)));
+        const curEmpty = Math.max(0, (d.initEmpty || 0) + regSold + (d.swapIn || 0) - (d.sentEmpty || 0));
+        const curAtCompany = Math.max(0, (d.atCompany || 0) + (d.sentEmpty || 0) - (d.receivedFull || 0));
+        const itemGrandTotal = curFull + curEmpty + curAtCompany;
+
+        totalInitialFull += (d.initFull || 0);
+        totalInitialEmpty += (d.initEmpty || 0);
+        totalAtCompany += curAtCompany;
+        totalShift1Sold += (d.shift1Sold || 0);
+        totalShift2Sold += (d.shift2Sold || 0);
+        totalSoldAll += regSold;
+        totalCurrentFull += curFull;
+        totalCurrentEmpty += curEmpty;
+        totalAllCylinders += itemGrandTotal;
+        totalGasRevenue += regSold * (d.price || item.defaultPrice);
+      });
+
+      // منظمات
+      let totalRegSold = 0;
+      let totalRegRevenue = 0;
+      let totalRegStock = 0;
+      REGULATOR_DEFINITIONS.forEach(r => {
+        const d = appState.regulators[r.id] || { initStock: 0, added: 0, shift1Sold: 0, shift2Sold: 0, price: r.price };
+        const s = (d.shift1Sold || 0) + (d.shift2Sold || 0);
+        const rem = Math.max(0, (d.initStock || 0) + (d.added || 0) - s);
+        totalRegSold += s;
+        totalRegRevenue += s * (d.price || r.price);
+        totalRegStock += rem;
+      });
+
+      // خرطوش
+      const hoseSold = (Number(appState.hose.shift1Meters) || 0) + (Number(appState.hose.shift2Meters) || 0);
+      const hoseRemaining = Math.max(0, (Number(appState.hose.initMeters) || 0) + (Number(appState.hose.addedMeters) || 0) - hoseSold);
+      const hoseRevenue = hoseSold * (Number(appState.hose.pricePerMeter) || 0);
+
+      const swapFees = appState.swaps
+        .filter(s => s.date === appState.currentDate)
+        .reduce((sum, s) => sum + (Number(s.differenceFee) || 0), 0);
+
+      const expensesTotal = appState.expenses
+        .filter(e => e.date === appState.currentDate)
+        .reduce((sum, e) => sum + (Number(e.amount) || 0), 0);
+
+      const todayCols = appState.collections.filter(c => c.date === appState.currentDate);
+      const newDebtToday = todayCols.filter(c => !c.paid).reduce((s, c) => s + Number(c.amount), 0);
+      const collectedToday = appState.collections
+        .filter(c => c.paid && (c.paidDate === appState.currentDate || (!c.paidDate && c.date === appState.currentDate)))
+        .reduce((s, c) => s + Number(c.amount), 0);
+      const totalAllUnpaid = appState.collections.filter(c => !c.paid).reduce((s, c) => s + Number(c.amount), 0);
+
+      const totalGrossRevenue = totalGasRevenue + totalRegRevenue + hoseRevenue + swapFees;
+      const electronic = (Number(appState.payments.bankak) || 0) + (Number(appState.payments.fawry) || 0) + (Number(appState.payments.ocash) || 0);
+      const expectedCash = (totalGrossRevenue + collectedToday) - (electronic + newDebtToday + expensesTotal);
+      const actualCash = Number(appState.payments.actualCash) || 0;
+      const discrepancy = actualCash - expectedCash;
+      const netIncome = totalGrossRevenue - expensesTotal;
+
+      return {
+        totalInitialFull, totalInitialEmpty, totalAtCompany,
+        totalShift1Sold, totalShift2Sold, totalSoldAll,
+        totalCurrentFull, totalCurrentEmpty, totalAllCylinders,
+        totalGasRevenue,
+        totalRegSold, totalRegRevenue, totalRegStock,
+        hoseSold, hoseRemaining, hoseRevenue,
+        swapFees, expensesTotal,
+        newDebtToday, collectedToday, totalAllUnpaid,
+        totalGrossRevenue, electronic, expectedCash, actualCash, discrepancy, netIncome
+      };
+    }
+
+    // رسم جدول الجرد الرئيسي مع تسهيلات الإدخال الكبرى
+    function renderInventoryTable() {
+      const search = (document.getElementById('inventorySearch')?.value || '').trim().toLowerCase();
+      const tbody = document.getElementById('inventoryTableBody');
+      const tfoot = document.getElementById('inventoryTableFoot');
+      if (!tbody) return;
+
+      const filtered = CYLINDER_DEFINITIONS.filter(item => {
+        const matchesCat = appState.activeCategory === 'الكل' || item.category === appState.activeCategory;
+        const matchesSearch = item.name.toLowerCase().includes(search);
+        return matchesCat && matchesSearch;
+      });
+
+      let html = '';
+      filtered.forEach((item, index) => {
+        const d = appState.inventory[item.id] || { initFull:0, initEmpty:0, atCompany:0, shift1Sold:0, shift2Sold:0, receivedFull:0, sentEmpty:0, swapOut:0, swapIn:0 };
+        const regSold = (d.shift1Sold || 0) + (d.shift2Sold || 0);
+        const totalSoldWithPrepaid = regSold + (d.prepaidSold || 0);
+        const curFull = Math.max(0, (d.initFull || 0) + (d.receivedFull || 0) - (totalSoldWithPrepaid + (d.swapOut || 0)));
+        const curEmpty = Math.max(0, (d.initEmpty || 0) + regSold + (d.swapIn || 0) - (d.sentEmpty || 0));
+        const curAtCompany = Math.max(0, (d.atCompany || 0) + (d.sentEmpty || 0) - (d.receivedFull || 0));
+        const totalItemCount = curFull + curEmpty + curAtCompany;
+
+        html += `
+          <tr class="hover:bg-slate-800/40 transition-colors ${regSold > 0 ? 'bg-amber-500/5' : ''}">
+            <td class="p-2 text-center text-slate-500 font-mono">${index + 1}</td>
+            <td class="p-2 font-bold text-white whitespace-nowrap">
+              <span class="text-sm">${item.name}</span>
+              <span class="text-[10px] text-slate-500 font-normal mr-1">(${item.category})</span>
+            </td>
+
+            <!-- ملان البداية -->
+            <td class="p-1.5 text-center bg-emerald-950/10">
+              <input type="number" data-item="${item.id}" data-field="initFull" inputmode="numeric" pattern="[0-9]*" onfocus="this.select()" onkeydown="handleInputKeydown(event)" value="${d.initFull || ''}" placeholder="0" oninput="onGasFieldChange('${item.id}', 'initFull', this.value)" class="table-input num-input w-16 text-center bg-slate-950 border border-slate-700 rounded-xl py-2 px-1 text-emerald-400 font-black text-sm transition" />
+            </td>
+
+            <!-- فاضي البداية -->
+            <td class="p-1.5 text-center bg-blue-950/10">
+              <input type="number" data-item="${item.id}" data-field="initEmpty" inputmode="numeric" pattern="[0-9]*" onfocus="this.select()" onkeydown="handleInputKeydown(event)" value="${d.initEmpty || ''}" placeholder="0" oninput="onGasFieldChange('${item.id}', 'initEmpty', this.value)" class="table-input num-input w-16 text-center bg-slate-950 border border-slate-700 rounded-xl py-2 px-1 text-blue-400 font-black text-sm transition" />
+            </td>
+
+            <!-- في الشركة (بداية) -->
+            <td class="p-1.5 text-center bg-purple-950/10">
+              <input type="number" data-item="${item.id}" data-field="atCompany" inputmode="numeric" pattern="[0-9]*" onfocus="this.select()" onkeydown="handleInputKeydown(event)" value="${d.atCompany || ''}" placeholder="0" oninput="onGasFieldChange('${item.id}', 'atCompany', this.value)" class="table-input num-input w-16 text-center bg-slate-950 border border-slate-700 rounded-xl py-2 px-1 text-purple-400 font-black text-sm transition" />
+            </td>
+
+            <!-- مباع وردية 1 مع أزرار الزيادة السريعة للموبايل -->
+            <td class="p-1.5 text-center bg-amber-500/5">
+              <div class="inline-flex items-center gap-1 justify-center">
+                <button type="button" onclick="stepGasField('${item.id}', 'shift1Sold', -1)" class="w-6 h-7 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-bold flex items-center justify-center text-xs active:scale-90">-</button>
+                <input type="number" data-item="${item.id}" data-field="shift1Sold" inputmode="numeric" pattern="[0-9]*" onfocus="this.select()" onkeydown="handleInputKeydown(event)" value="${d.shift1Sold || ''}" placeholder="0" oninput="onGasFieldChange('${item.id}', 'shift1Sold', this.value)" class="table-input num-input w-12 text-center bg-slate-950 border border-amber-500/40 rounded-xl py-2 text-amber-300 font-black text-sm transition" />
+                <button type="button" onclick="stepGasField('${item.id}', 'shift1Sold', 1)" class="w-6 h-7 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-lg font-bold flex items-center justify-center text-xs active:scale-90">+</button>
+              </div>
+            </td>
+
+            <!-- مباع وردية 2 مع أزرار الزيادة السريعة للموبايل -->
+            <td class="p-1.5 text-center bg-amber-500/5">
+              <div class="inline-flex items-center gap-1 justify-center">
+                <button type="button" onclick="stepGasField('${item.id}', 'shift2Sold', -1)" class="w-6 h-7 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-lg font-bold flex items-center justify-center text-xs active:scale-90">-</button>
+                <input type="number" data-item="${item.id}" data-field="shift2Sold" inputmode="numeric" pattern="[0-9]*" onfocus="this.select()" onkeydown="handleInputKeydown(event)" value="${d.shift2Sold || ''}" placeholder="0" oninput="onGasFieldChange('${item.id}', 'shift2Sold', this.value)" class="table-input num-input w-12 text-center bg-slate-950 border border-amber-500/40 rounded-xl py-2 text-amber-300 font-black text-sm transition" />
+                <button type="button" onclick="stepGasField('${item.id}', 'shift2Sold', 1)" class="w-6 h-7 bg-amber-500/20 hover:bg-amber-500/30 text-amber-300 rounded-lg font-bold flex items-center justify-center text-xs active:scale-90">+</button>
+              </div>
+            </td>
+
+            <!-- وارد ملان من الشركة -->
+            <td class="p-1.5 text-center">
+              <input type="number" data-item="${item.id}" data-field="receivedFull" inputmode="numeric" pattern="[0-9]*" onfocus="this.select()" onkeydown="handleInputKeydown(event)" value="${d.receivedFull || ''}" placeholder="0" oninput="onGasFieldChange('${item.id}', 'receivedFull', this.value)" class="table-input num-input w-14 text-center bg-slate-950 border border-emerald-600/40 rounded-xl py-2 text-emerald-300 font-black text-sm transition" />
+            </td>
+
+            <!-- مرسل فاضي للشركة -->
+            <td class="p-1.5 text-center">
+              <input type="number" data-item="${item.id}" data-field="sentEmpty" inputmode="numeric" pattern="[0-9]*" onfocus="this.select()" onkeydown="handleInputKeydown(event)" value="${d.sentEmpty || ''}" placeholder="0" oninput="onGasFieldChange('${item.id}', 'sentEmpty', this.value)" class="table-input num-input w-14 text-center bg-slate-950 border border-rose-600/40 rounded-xl py-2 text-rose-300 font-black text-sm transition" />
+            </td>
+
+            <!-- إجمالي المباع المحسوب -->
+            <td class="p-2 text-center font-black text-amber-400 text-sm">
+              ${regSold > 0 ? `<span class="bg-amber-500/20 text-amber-300 px-2.5 py-1 rounded-lg border border-amber-500/40">${regSold}</span>` : `<span class="text-slate-600">-</span>`}
+            </td>
+
+            <!-- ملان متبقي حالي -->
+            <td class="p-2 text-center font-black text-emerald-400 bg-emerald-950/30 text-sm" id="cell-curFull-${item.id}">${curFull}</td>
+
+            <!-- فاضي متبقي حالي -->
+            <td class="p-2 text-center font-black text-blue-400 bg-blue-950/30 text-sm" id="cell-curEmpty-${item.id}">${curEmpty}</td>
+
+            <!-- في الشركة حالياً -->
+            <td class="p-2 text-center font-black text-purple-300 bg-purple-950/30 text-sm" id="cell-curCompany-${item.id}">${curAtCompany}</td>
+
+            <!-- العدد الكلي -->
+            <td class="p-2 text-center font-black text-slate-100 bg-slate-800/60 text-sm" id="cell-totalCount-${item.id}">${totalItemCount}</td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+
+      updateInventoryFootTotals();
+    }
+
+    function updateInventoryFootTotals() {
+      const totals = calculateTotals();
+      const tfoot = document.getElementById('inventoryTableFoot');
+      if (!tfoot) return;
+      tfoot.innerHTML = `
+        <tr>
+          <td colspan="2" class="p-3 text-center text-amber-400 text-sm">المجموع الكلي للأسطوانات</td>
+          <td class="p-2 text-center text-emerald-400 text-sm font-bold">${totals.totalInitialFull}</td>
+          <td class="p-2 text-center text-blue-400 text-sm font-bold">${totals.totalInitialEmpty}</td>
+          <td class="p-2 text-center text-purple-400 text-sm font-bold">${totals.totalAtCompany}</td>
+          <td class="p-2 text-center text-amber-300 text-sm font-bold">${totals.totalShift1Sold}</td>
+          <td class="p-2 text-center text-amber-300 text-sm font-bold">${totals.totalShift2Sold}</td>
+          <td colspan="2" class="p-2 text-center text-slate-400">حركة التعبئة</td>
+          <td class="p-2 text-center text-amber-400 text-sm bg-amber-500/20">${totals.totalSoldAll}</td>
+          <td class="p-2 text-center text-emerald-300 bg-emerald-950/40 text-sm">${totals.totalCurrentFull}</td>
+          <td class="p-2 text-center text-blue-300 bg-blue-950/40 text-sm">${totals.totalCurrentEmpty}</td>
+          <td class="p-2 text-center text-purple-300 bg-purple-950/40 text-sm">${totals.totalAtCompany}</td>
+          <td class="p-2 text-center text-slate-100 text-base bg-slate-800">${totals.totalAllCylinders}</td>
+        </tr>
+      `;
+    }
+
+    // رسم جدول المنظمات
+    function renderRegulatorsTable() {
+      const tbody = document.getElementById('regulatorsTableBody');
+      if (!tbody) return;
+
+      let html = '';
+      REGULATOR_DEFINITIONS.forEach(r => {
+        const d = appState.regulators[r.id] || { initStock: 0, added: 0, shift1Sold: 0, shift2Sold: 0, price: r.price };
+        const sold = (d.shift1Sold || 0) + (d.shift2Sold || 0);
+        const rem = Math.max(0, (d.initStock || 0) + (d.added || 0) - sold);
+
+        html += `
+          <tr class="hover:bg-slate-800/30">
+            <td class="p-2.5 font-bold text-white">${r.name}</td>
+            <td class="p-1.5 text-center">
+              <input type="number" inputmode="numeric" onfocus="this.select()" value="${d.initStock || ''}" placeholder="0" oninput="onRegFieldChange('${r.id}', 'initStock', this.value)" class="num-input w-14 text-center bg-slate-950 border border-slate-700 rounded-xl py-1.5 text-slate-200 font-bold" />
+            </td>
+            <td class="p-1.5 text-center">
+              <input type="number" inputmode="numeric" onfocus="this.select()" value="${d.added || ''}" placeholder="0" oninput="onRegFieldChange('${r.id}', 'added', this.value)" class="num-input w-14 text-center bg-slate-950 border border-slate-700 rounded-xl py-1.5 text-emerald-400 font-bold" />
+            </td>
+            <td class="p-1.5 text-center">
+              <input type="number" inputmode="numeric" onfocus="this.select()" value="${d.shift1Sold || ''}" placeholder="0" oninput="onRegFieldChange('${r.id}', 'shift1Sold', this.value)" class="num-input w-14 text-center bg-slate-950 border border-amber-500/40 rounded-xl py-1.5 text-amber-300 font-bold" />
+            </td>
+            <td class="p-1.5 text-center">
+              <input type="number" inputmode="numeric" onfocus="this.select()" value="${d.shift2Sold || ''}" placeholder="0" oninput="onRegFieldChange('${r.id}', 'shift2Sold', this.value)" class="num-input w-14 text-center bg-slate-950 border border-amber-500/40 rounded-xl py-1.5 text-amber-300 font-bold" />
+            </td>
+            <td class="p-2 text-center font-black text-emerald-400 bg-emerald-950/20 text-sm">${rem}</td>
+            <td class="p-2 text-center text-slate-400 font-mono">${(d.price || r.price).toLocaleString()}</td>
+          </tr>
+        `;
+      });
+      tbody.innerHTML = html;
+    }
+
+    function onRegFieldChange(regId, field, val) {
+      const num = Math.max(0, parseInt(val) || 0);
+      if (!appState.regulators[regId]) return;
+      appState.regulators[regId][field] = num;
+      recalculateAndRender(false);
+    }
+
+    function updateHoseData() {
+      appState.hose.initMeters = Number(document.getElementById('hoseInitMeters')?.value) || 0;
+      appState.hose.addedMeters = Number(document.getElementById('hoseAddedMeters')?.value) || 0;
+      appState.hose.pricePerMeter = Number(document.getElementById('hosePricePerMeter')?.value) || 0;
+      appState.hose.shift1Meters = Number(document.getElementById('hoseShift1Meters')?.value) || 0;
+      appState.hose.shift2Meters = Number(document.getElementById('hoseShift2Meters')?.value) || 0;
+      recalculateAndRender(false);
+    }
+
+    function updatePaymentValues() {
+      appState.payments.bankak = Number(document.getElementById('payBankak')?.value) || 0;
+      appState.payments.fawry = Number(document.getElementById('payFawry')?.value) || 0;
+      appState.payments.ocash = Number(document.getElementById('payOcash')?.value) || 0;
+      appState.payments.actualCash = Number(document.getElementById('payActualCash')?.value) || 0;
+      recalculateAndRender(false);
+    }
+
+    function populateDropdowns() {
+      const selects = ['swapOutCylinder', 'swapInCylinder', 'specialCylinderType', 'colCylinderType'];
+      selects.forEach(selId => {
+        const elem = document.getElementById(selId);
+        if (!elem) return;
+        let opts = '';
+        CYLINDER_DEFINITIONS.forEach(c => {
+          opts += `<option value="${c.name}">${c.name} (${c.category})</option>`;
+        });
+        elem.innerHTML = opts;
+      });
+
+      if (document.getElementById('swapOutCylinder')) document.getElementById('swapOutCylinder').value = 'توتال';
+      if (document.getElementById('swapInCylinder')) document.getElementById('swapInCylinder').value = 'ابرسى';
+      updateCollectionAmountAuto();
+    }
+
+    function updateCollectionAmountAuto() {
+      const cylName = document.getElementById('colCylinderType')?.value;
+      const qty = parseInt(document.getElementById('colQty')?.value) || 1;
+      const item = CYLINDER_DEFINITIONS.find(c => c.name === cylName);
+      const price = item ? item.defaultPrice : 15000;
+      const amtInput = document.getElementById('colAmount');
+      if (amtInput) amtInput.value = price * qty;
+    }
+
+    function handleSwapSubmit(e) {
+      e.preventDefault();
+      const customer = document.getElementById('swapCustomer')?.value.trim() || 'زبون عام';
+      const outCyl = document.getElementById('swapOutCylinder')?.value;
+      const inCyl = document.getElementById('swapInCylinder')?.value;
+      const qty = parseInt(document.getElementById('swapQty')?.value) || 1;
+      const fee = Number(document.getElementById('swapDifferenceFee')?.value) || 0;
+      const shift = document.getElementById('swapShift')?.value || '1';
+
+      const outItem = CYLINDER_DEFINITIONS.find(c => c.name === outCyl);
+      const inItem = CYLINDER_DEFINITIONS.find(c => c.name === inCyl);
+
+      if (outItem && inItem) {
+        appState.inventory[outItem.id].swapOut = (appState.inventory[outItem.id].swapOut || 0) + qty;
+        appState.inventory[inItem.id].swapIn = (appState.inventory[inItem.id].swapIn || 0) + qty;
+      }
+
+      appState.swaps.unshift({
+        id: 'sw-' + Date.now(),
+        date: appState.currentDate,
+        customer,
+        outCylinder: outCyl,
+        inCylinder: inCyl,
+        qty,
+        differenceFee: fee,
+        shift
+      });
+
+      document.getElementById('swapCustomer').value = '';
+      showToast(`🔄 تم تسجيل التبديل: خرج (${outCyl}) ودخل (${inCyl})`);
+      recalculateAndRender(true);
+    }
+
+    function handleSpecialSubmit(e) {
+      e.preventDefault();
+      const type = document.getElementById('specialType')?.value;
+      const customer = document.getElementById('specialCustomer')?.value.trim() || 'بدون اسم';
+      const cylName = document.getElementById('specialCylinderType')?.value;
+      const qty = parseInt(document.getElementById('specialQty')?.value) || 1;
+      const notes = document.getElementById('specialNotes')?.value.trim() || '';
+
+      const item = CYLINDER_DEFINITIONS.find(c => c.name === cylName);
+      if (item) {
+        if (type === 'prepaid_delivery') {
+          appState.inventory[item.id].prepaidSold = (appState.inventory[item.id].prepaidSold || 0) + qty;
+        } else if (type === 'empty_deposit') {
+          appState.inventory[item.id].swapIn = (appState.inventory[item.id].swapIn || 0) + qty;
+        }
+      }
+
+      appState.specials.unshift({
+        id: 'sp-' + Date.now(),
+        date: appState.currentDate,
+        type,
+        customer,
+        cylinderType: cylName,
+        qty,
+        notes
+      });
+
+      document.getElementById('specialCustomer').value = '';
+      document.getElementById('specialNotes').value = '';
+      showToast('✅ تم تسجيل الحركة بنجاح وضبط رصيد الأسطوانات');
+      recalculateAndRender(true);
+    }
+
+    function handleCollectionSubmit(e) {
+      e.preventDefault();
+      const customer = document.getElementById('colCustomer')?.value.trim();
+      const phone = document.getElementById('colPhone')?.value.trim() || '---';
+      const cyl = document.getElementById('colCylinderType')?.value;
+      const qty = parseInt(document.getElementById('colQty')?.value) || 1;
+      const amount = Number(document.getElementById('colAmount')?.value) || 0;
+      const notes = document.getElementById('colNotes')?.value.trim() || '';
+
+      if (!customer || !amount) {
+        showToast('⚠️ يرجى إدخال اسم الزبون والمبلغ');
+        return;
+      }
+
+      appState.collections.unshift({
+        id: 'col-' + Date.now(),
+        date: appState.currentDate,
+        customer,
+        phone,
+        cylinderType: cyl,
+        qty,
+        amount,
+        paid: false,
+        paidDate: null,
+        notes
+      });
+
+      document.getElementById('colCustomer').value = '';
+      document.getElementById('colPhone').value = '';
+      document.getElementById('colNotes').value = '';
+      updateCollectionAmountAuto();
+      showToast('✅ تمت إضافة الفاتورة الآجلة');
+      recalculateAndRender(true);
+    }
+
+    function toggleCollectionPaid(id) {
+      const col = appState.collections.find(c => c.id === id);
+      if (col) {
+        col.paid = !col.paid;
+        col.paidDate = col.paid ? appState.currentDate : null;
+        showToast(col.paid ? '✔️ تم شطب الفاتورة واستلام المبلغ' : '🔄 تم إلغاء الشطب');
+        recalculateAndRender(true);
+      }
+    }
+
+    function deleteCollection(id) {
+      appState.collections = appState.collections.filter(c => c.id !== id);
+      showToast('🗑️ تم حذف السجل');
+      recalculateAndRender(true);
+    }
+
+    function handleExpenseSubmit(e) {
+      e.preventDefault();
+      const title = document.getElementById('expTitle')?.value.trim();
+      const amount = Number(document.getElementById('expAmount')?.value) || 0;
+      const category = document.getElementById('expCategory')?.value;
+      const shift = document.getElementById('expShift')?.value;
+      const notes = document.getElementById('expNotes')?.value.trim() || '';
+
+      if (!title || !amount) {
+        showToast('⚠️ يرجى إدخال بند المنصرف والمبلغ');
+        return;
+      }
+
+      appState.expenses.unshift({
+        id: 'exp-' + Date.now(),
+        date: appState.currentDate,
+        title,
+        amount,
+        category,
+        shift,
+        notes
+      });
+
+      document.getElementById('expTitle').value = '';
+      document.getElementById('expAmount').value = '';
+      document.getElementById('expNotes').value = '';
+      showToast('✅ تم تسجيل المنصرف');
+      recalculateAndRender(true);
+    }
+
+    function deleteExpense(id) {
+      appState.expenses = appState.expenses.filter(e => e.id !== id);
+      showToast('🗑️ تم حذف المنصرف');
+      recalculateAndRender(true);
+    }
+
+    function rollOverToNextDay() {
+      CYLINDER_DEFINITIONS.forEach(item => {
+        const d = appState.inventory[item.id] || { initFull:0, initEmpty:0, atCompany:0, shift1Sold:0, shift2Sold:0, prepaidSold:0, receivedFull:0, sentEmpty:0, swapOut:0, swapIn:0 };
+        const regSold = (d.shift1Sold || 0) + (d.shift2Sold || 0);
+        const totalSoldWithPrepaid = regSold + (d.prepaidSold || 0);
+
+        const endFull = Math.max(0, (d.initFull || 0) + (d.receivedFull || 0) - (totalSoldWithPrepaid + (d.swapOut || 0)));
+        const endEmpty = Math.max(0, (d.initEmpty || 0) + regSold + (d.swapIn || 0) - (d.sentEmpty || 0));
+        const endAtCompany = Math.max(0, (d.atCompany || 0) + (d.sentEmpty || 0) - (d.receivedFull || 0));
+
+        appState.inventory[item.id] = {
+          initFull: endFull,
+          initEmpty: endEmpty,
+          atCompany: endAtCompany,
+          shift1Sold: 0,
+          shift2Sold: 0,
+          prepaidSold: 0,
+          receivedFull: 0,
+          sentEmpty: 0,
+          swapOut: 0,
+          swapIn: 0,
+          price: d.price || item.defaultPrice
+        };
+      });
+
+      REGULATOR_DEFINITIONS.forEach(r => {
+        const d = appState.regulators[r.id] || { initStock: 0, added: 0, shift1Sold: 0, shift2Sold: 0, price: r.price };
+        const s = (d.shift1Sold || 0) + (d.shift2Sold || 0);
+        appState.regulators[r.id] = {
+          initStock: Math.max(0, (d.initStock || 0) + (d.added || 0) - s),
+          added: 0,
+          shift1Sold: 0,
+          shift2Sold: 0,
+          price: d.price || r.price
+        };
+      });
+
+      const totals = calculateTotals();
+      appState.hose.initMeters = totals.hoseRemaining;
+      appState.hose.addedMeters = 0;
+      appState.hose.shift1Meters = 0;
+      appState.hose.shift2Meters = 0;
+
+      appState.payments = { bankak: 0, fawry: 0, ocash: 0, actualCash: 0 };
+      if (document.getElementById('payBankak')) document.getElementById('payBankak').value = '';
+      if (document.getElementById('payFawry')) document.getElementById('payFawry').value = '';
+      if (document.getElementById('payOcash')) document.getElementById('payOcash').value = '';
+      if (document.getElementById('payActualCash')) document.getElementById('payActualCash').value = '';
+
+      const d = new Date(appState.currentDate);
+      d.setDate(d.getDate() + 1);
+      appState.currentDate = d.toISOString().split('T')[0];
+      document.getElementById('currentDateInput').value = appState.currentDate;
+
+      showToast('🚀 تم تدوير الأرصدة وبدء يوم جديد');
+      recalculateAndRender(true);
+    }
+
+    function saveDailyReportSnapshot() {
+      const totals = calculateTotals();
+      appState.savedReports.unshift({
+        id: 'rep-' + Date.now(),
+        date: appState.currentDate,
+        savedAt: new Date().toLocaleTimeString('ar-SD'),
+        totals: { ...totals }
+      });
+      showToast('🎉 تم إقفال وحفظ التقرير في الأرشيف');
+      recalculateAndRender(true);
+    }
+
+    function shareViaWhatsApp() {
+      const t = calculateTotals();
+      const text = `*تقرير نقطة ومخزن أنور أبوقصيصة لغاز الطهي* 🔥
+📅 *التاريخ:* ${appState.currentDate}
+-------------------------
+📦 *حركة أسطوانات الغاز:*
+• المباع اليوم: ${t.totalSoldAll} أسطوانة (و1: ${t.totalShift1Sold} | و2: ${t.totalShift2Sold})
+• الرصيد بالمخزن: ${t.totalCurrentFull} ملان | ${t.totalCurrentEmpty} فاضي
+• 🏭 في شركة التعبئة: ${t.totalAtCompany} أسطوانة
+• 🔢 إجمالي أسطوانات المخزن: ${t.totalAllCylinders}
+
+🎛️ *ملحقات الغاز:*
+• منظمات مباعة: ${t.totalRegSold} حبة (المتبقي: ${t.totalRegStock})
+• خرطوش غاز مباع: ${t.hoseSold} متر (المتبقي: ${t.hoseRemaining} متر)
+
+💰 *التقرير المالي والخزينة:*
+• إجمالي الإيرادات: ${t.totalGrossRevenue.toLocaleString()} ج.س
+• المنصرفات: ${t.expensesTotal.toLocaleString()} ج.س
+• دفع إلكتروني (بنكك/فوري/أوكاش): ${t.electronic.toLocaleString()} ج.س
+• ديون معلقة: ${t.totalAllUnpaid.toLocaleString()} ج.س
+• الكاش الفعلي بالدرج: ${t.actualCash.toLocaleString()} ج.س
+• حالة الخزينة: ${t.discrepancy === 0 ? '✅ مطابقة تامة 100%' : t.discrepancy > 0 ? `🟢 فائض (+${t.discrepancy.toLocaleString()})` : `🔴 عجز (${t.discrepancy.toLocaleString()})`}
+-------------------------
+تم الإعداد بواسطة تطبيق أنور أبوقصيصة`;
+
+      try {
+        const input = document.createElement('textarea');
+        input.value = text;
+        document.body.appendChild(input);
+        input.select();
+        document.execCommand('copy');
+        document.body.removeChild(input);
+      } catch (err) {}
+
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text)}`, '_blank');
+      showToast('📋 تم تجهيز التقرير وفتح الواتساب');
+    }
+
+    // تحديث الواجهة العامة مع الحفاظ على تركيز المؤشر أثناء الكتابة السريعة
+    function recalculateAndRender(fullRebuild = false) {
+      const totals = calculateTotals();
+
+      document.getElementById('headerTotalSold').innerText = `${totals.totalSoldAll} أسطوانة`;
+      document.getElementById('headerFullStock').innerText = totals.totalCurrentFull;
+      document.getElementById('headerEmptyStock').innerText = totals.totalCurrentEmpty;
+      document.getElementById('headerAtCompany').innerText = totals.totalAtCompany;
+      document.getElementById('headerAllCylinders').innerText = totals.totalAllCylinders;
+
+      const unpaidCount = appState.collections.filter(c => !c.paid).length;
+      const unpaidBadge = document.getElementById('unpaidBadge');
+      if (unpaidBadge) {
+        unpaidBadge.innerText = unpaidCount;
+        unpaidBadge.style.display = unpaidCount > 0 ? 'flex' : 'none';
+      }
+
+      if (fullRebuild) {
+        renderInventoryTable();
+        renderRegulatorsTable();
+      } else {
+        // تحديث الخلايا المحسوبة فقط لمنع إغلاق لوحة المفاتيح أثناء الكتابة السريعة
+        CYLINDER_DEFINITIONS.forEach(item => {
+          const d = appState.inventory[item.id] || { initFull:0, initEmpty:0, atCompany:0, shift1Sold:0, shift2Sold:0, prepaidSold:0, receivedFull:0, sentEmpty:0, swapOut:0, swapIn:0 };
+          const regSold = (d.shift1Sold || 0) + (d.shift2Sold || 0);
+          const totalSoldWithPrepaid = regSold + (d.prepaidSold || 0);
+          const curFull = Math.max(0, (d.initFull || 0) + (d.receivedFull || 0) - (totalSoldWithPrepaid + (d.swapOut || 0)));
+          const curEmpty = Math.max(0, (d.initEmpty || 0) + regSold + (d.swapIn || 0) - (d.sentEmpty || 0));
+          const curAtCompany = Math.max(0, (d.atCompany || 0) + (d.sentEmpty || 0) - (d.receivedFull || 0));
+          const totalItemCount = curFull + curEmpty + curAtCompany;
+
+          const fCell = document.getElementById(`cell-curFull-${item.id}`);
+          if (fCell) fCell.innerText = curFull;
+          const eCell = document.getElementById(`cell-curEmpty-${item.id}`);
+          if (eCell) eCell.innerText = curEmpty;
+          const compCell = document.getElementById(`cell-curCompany-${item.id}`);
+          if (compCell) compCell.innerText = curAtCompany;
+          const totCell = document.getElementById(`cell-totalCount-${item.id}`);
+          if (totCell) totCell.innerText = totalItemCount;
+        });
+        updateInventoryFootTotals();
+      }
+
+      document.getElementById('regSoldBadge').innerText = `${totals.totalRegSold} حبة مباعة`;
+      document.getElementById('totalRegRevenueText').innerText = `${totals.totalRegRevenue.toLocaleString()} ج.س`;
+      document.getElementById('hoseRemainingBadge').innerText = `${totals.hoseRemaining} متر متبقي`;
+      document.getElementById('hoseTotalSoldText').innerText = `${totals.hoseSold} متر`;
+      document.getElementById('hoseTotalRevenueText').innerText = `${totals.hoseRevenue.toLocaleString()} ج.س`;
+
+      if (document.getElementById('hoseInitMeters') && document.activeElement !== document.getElementById('hoseInitMeters')) {
+        document.getElementById('hoseInitMeters').value = appState.hose.initMeters;
+      }
+      if (document.getElementById('hoseAddedMeters') && document.activeElement !== document.getElementById('hoseAddedMeters')) {
+        document.getElementById('hoseAddedMeters').value = appState.hose.addedMeters;
+      }
+      if (document.getElementById('hosePricePerMeter') && document.activeElement !== document.getElementById('hosePricePerMeter')) {
+        document.getElementById('hosePricePerMeter').value = appState.hose.pricePerMeter;
+      }
+      if (document.getElementById('hoseShift1Meters') && document.activeElement !== document.getElementById('hoseShift1Meters')) {
+        document.getElementById('hoseShift1Meters').value = appState.hose.shift1Meters;
+      }
+      if (document.getElementById('hoseShift2Meters') && document.activeElement !== document.getElementById('hoseShift2Meters')) {
+        document.getElementById('hoseShift2Meters').value = appState.hose.shift2Meters;
+      }
+
+      const swapLogsDiv = document.getElementById('swapLogsList');
+      if (swapLogsDiv) {
+        swapLogsDiv.innerHTML = appState.swaps.map(s => `
+          <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
+            <div>
+              <div class="font-bold text-white flex items-center gap-1.5">
+                <span class="text-rose-400">خارج ملان: ${s.outCylinder}</span>
+                <span class="text-slate-500">⇄</span>
+                <span class="text-emerald-400">داخل فاضي: ${s.inCylinder}</span>
+                <span class="text-slate-400">(${s.qty})</span>
+              </div>
+              <div class="text-[10px] text-slate-500 mt-0.5">
+                ${s.customer} • وردية ${s.shift} ${s.differenceFee > 0 ? `• فرق: ${s.differenceFee} ج.س` : ''}
+              </div>
+            </div>
+          </div>
+        `).join('') || '<div class="text-slate-500 text-center py-4 text-xs">لا توجد عمليات تبديل مسجلة</div>';
+      }
+
+      const specialLogsDiv = document.getElementById('specialLogsList');
+      if (specialLogsDiv) {
+        specialLogsDiv.innerHTML = appState.specials.map(sp => `
+          <div class="bg-slate-950 p-2.5 rounded-xl border border-slate-800 flex items-center justify-between text-xs">
+            <div>
+              <div class="font-bold text-white flex items-center gap-1.5">
+                <span>${sp.type === 'prepaid_delivery' ? '🏷️ مسبق الدفع:' : '📥 أمانة فاضي:'}</span>
+                <span class="text-amber-300">${sp.cylinderType} (${sp.qty})</span>
+              </div>
+              <div class="text-[10px] text-slate-400 mt-0.5">${sp.customer} ${sp.notes ? `• ${sp.notes}` : ''}</div>
+            </div>
+          </div>
+        `).join('') || '<div class="text-slate-500 text-center py-4 text-xs">لا توجد حركات أمانة مسجلة</div>';
+      }
+
+      document.getElementById('statTotalUnpaid').innerText = `${totals.totalAllUnpaid.toLocaleString()} ج.س`;
+      document.getElementById('statNewDebtToday').innerText = `${totals.newDebtToday.toLocaleString()} ج.س`;
+      document.getElementById('statCollectedToday').innerText = `${totals.collectedToday.toLocaleString()} ج.س`;
+
+      const colListDiv = document.getElementById('collectionsList');
+      if (colListDiv) {
+        colListDiv.innerHTML = appState.collections.map(col => `
+          <div class="p-4 transition-all flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 ${col.paid ? 'bg-slate-950/40 opacity-75' : 'hover:bg-slate-800/40'}">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-sm ${col.paid ? 'line-through text-slate-400' : 'text-white'}">${col.customer}</span>
+                ${col.paid ? `
+                  <span class="bg-emerald-500/20 text-emerald-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-emerald-500/30">
+                    تم الشطب والسداد (${col.paidDate})
+                  </span>
+                ` : `
+                  <span class="bg-rose-500/20 text-rose-400 text-[10px] font-bold px-2 py-0.5 rounded-full border border-rose-500/30">معلق</span>
+                `}
+              </div>
+              <div class="text-xs text-slate-400 flex flex-wrap items-center gap-3">
+                <span>📅 ${col.date}</span>
+                <span>📦 ${col.cylinderType} (${col.qty})</span>
+                ${col.phone !== '---' ? `<span>📞 ${col.phone}</span>` : ''}
+                ${col.notes ? `<span class="text-amber-300/80">📝 ${col.notes}</span>` : ''}
+              </div>
+            </div>
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-end border-t sm:border-t-0 pt-2 sm:pt-0 border-slate-800">
+              <span class="text-base font-black ${col.paid ? 'line-through text-slate-500' : 'text-amber-400'}">${col.amount.toLocaleString()} ج.س</span>
+              <div class="flex items-center gap-1.5">
+                <button onclick="toggleCollectionPaid('${col.id}')" class="px-3 py-1.5 rounded-xl text-xs font-bold transition flex items-center gap-1 ${col.paid ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-md active:scale-95'}">
+                  ${col.paid ? 'إلغاء الشطب' : 'شطب (دفع)'}
+                </button>
+                ${appState.userRole === 'owner' ? `
+                  <button onclick="deleteCollection('${col.id}')" class="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                  </button>
+                ` : ''}
+              </div>
+            </div>
+          </div>
+        `).join('') || '<div class="p-8 text-center text-slate-500 text-xs">لا توجد فواتير آجلة مسجلة</div>';
+      }
+
+      document.getElementById('statTotalExpenses').innerText = `${totals.expensesTotal.toLocaleString()} ج.س`;
+      const expListDiv = document.getElementById('expensesList');
+      if (expListDiv) {
+        const todayExp = appState.expenses.filter(e => e.date === appState.currentDate);
+        expListDiv.innerHTML = todayExp.map(exp => `
+          <div class="p-4 hover:bg-slate-800/40 transition flex items-center justify-between gap-3">
+            <div class="space-y-1">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-sm text-white">${exp.title}</span>
+                <span class="bg-slate-800 text-slate-300 text-[10px] px-2 py-0.5 rounded-md">${exp.category}</span>
+                <span class="bg-amber-500/10 text-amber-300 text-[10px] px-2 py-0.5 rounded-md">وردية ${exp.shift}</span>
+              </div>
+              ${exp.notes ? `<p class="text-xs text-slate-400">${exp.notes}</p>` : ''}
+            </div>
+            <div class="flex items-center gap-3">
+              <span class="text-base font-black text-rose-400">-${exp.amount.toLocaleString()} ج.س</span>
+              <button onclick="deleteExpense('${exp.id}')" class="p-1.5 text-slate-500 hover:text-rose-400 hover:bg-rose-500/10 rounded-lg transition">
+                <i data-lucide="trash-2" class="w-4 h-4"></i>
+              </button>
+            </div>
+          </div>
+        `).join('') || '<div class="p-8 text-center text-slate-500 text-xs">لم يتم تسجيل منصرفات لليوم</div>';
+      }
+
+      document.getElementById('repGasRevenue').innerText = `${totals.totalGasRevenue.toLocaleString()} ج.س`;
+      document.getElementById('repGasSoldSubtitle').innerText = `${totals.totalSoldAll} أسطوانة مباعة`;
+      document.getElementById('repAccessoriesRevenue').innerText = `${(totals.totalRegRevenue + totals.hoseRevenue + totals.swapFees).toLocaleString()} ج.س`;
+      document.getElementById('repElectronicTotal').innerText = `${totals.electronic.toLocaleString()} ج.س`;
+      document.getElementById('repExpensesAndDebts').innerText = `${(totals.expensesTotal + totals.newDebtToday).toLocaleString()} ج.س`;
+      document.getElementById('repExpensesSubtitle').innerText = `منصرفات: ${totals.expensesTotal.toLocaleString()} ج.س`;
+
+      document.getElementById('repExpectedCash').innerText = `${totals.expectedCash.toLocaleString()} ج.س`;
+      document.getElementById('repActualCash').innerText = `${totals.actualCash.toLocaleString()} ج.س`;
+      document.getElementById('repNetIncome').innerText = `${totals.netIncome.toLocaleString()} ج.س`;
+
+      const discBox = document.getElementById('discrepancyBox');
+      const discTitle = document.getElementById('discrepancyTitle');
+      if (discBox && discTitle) {
+        if (totals.discrepancy === 0) {
+          discBox.className = 'p-6 rounded-2xl border-2 transition-all bg-emerald-950/20 border-emerald-500/50 print-box';
+          discTitle.innerHTML = `<i data-lucide="check-circle-2" class="w-8 h-8 text-emerald-400"></i> <span class="text-emerald-400">مطابقة تامة 100% (صفر عجز)</span>`;
+        } else if (totals.discrepancy > 0) {
+          discBox.className = 'p-6 rounded-2xl border-2 transition-all bg-blue-950/20 border-blue-500/50 print-box';
+          discTitle.innerHTML = `<i data-lucide="trending-up" class="w-8 h-8 text-blue-400"></i> <span class="text-blue-400">فائض في الخزينة: +${totals.discrepancy.toLocaleString()} ج.س</span>`;
+        } else {
+          discBox.className = 'p-6 rounded-2xl border-2 transition-all bg-rose-950/20 border-rose-500/50 print-box';
+          discTitle.innerHTML = `<i data-lucide="alert-circle" class="w-8 h-8 text-rose-400"></i> <span class="text-rose-400">عجز نقدي بالدرج: ${totals.discrepancy.toLocaleString()} ج.س</span>`;
+        }
+      }
+
+      const archiveDiv = document.getElementById('savedReportsList');
+      if (archiveDiv) {
+        archiveDiv.innerHTML = appState.savedReports.map(rep => `
+          <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-white text-base">تقرير يوم: ${rep.date}</span>
+                <span class="text-[10px] bg-slate-800 text-slate-400 px-2 py-0.5 rounded-md">حُفظ الساعة ${rep.savedAt}</span>
+              </div>
+              <div class="text-xs text-slate-400 mt-1 flex flex-wrap gap-4">
+                <span>📦 غاز: ${rep.totals.totalSoldAll}</span>
+                <span>🎛️ منظمات: ${rep.totals.totalRegSold}</span>
+                <span>📏 خرطوش: ${rep.totals.hoseSold} متر</span>
+                <span>💰 الإجمالي: ${rep.totals.totalGrossRevenue.toLocaleString()} ج.س</span>
+                <span>💵 كاش: ${rep.totals.actualCash.toLocaleString()} ج.س</span>
+              </div>
+            </div>
+            <span class="text-xs font-bold px-2.5 py-1 rounded-lg ${rep.totals.discrepancy === 0 ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border border-rose-500/30'}">
+              ${rep.totals.discrepancy === 0 ? 'مطابق 100%' : `عجز/فائض: ${rep.totals.discrepancy.toLocaleString()}`}
+            </span>
+          </div>
+        `).join('') || '<div class="p-12 text-center text-slate-500 text-xs">لم يتم حفظ تقارير يومية بعد</div>';
+      }
+
+      if (window.lucide) {
+        lucide.createIcons();
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initDefaultData();
+
+      const dateInput = document.getElementById('currentDateInput');
+      if (dateInput) {
+        dateInput.value = appState.currentDate;
+        dateInput.addEventListener('change', (e) => {
+          appState.currentDate = e.target.value;
+          recalculateAndRender(true);
+        });
+      }
+
+      if (document.getElementById('payBankak')) document.getElementById('payBankak').value = appState.payments.bankak;
+      if (document.getElementById('payFawry')) document.getElementById('payFawry').value = appState.payments.fawry;
+      if (document.getElementById('payOcash')) document.getElementById('payOcash').value = appState.payments.ocash;
+      if (document.getElementById('payActualCash')) document.getElementById('payActualCash').value = appState.payments.actualCash;
+
+      const toggleRoleBtn = document.getElementById('toggleRoleBtn');
+      if (toggleRoleBtn) {
+        toggleRoleBtn.addEventListener('click', () => {
+          appState.userRole = appState.userRole === 'owner' ? 'worker' : 'owner';
+          const isOwner = appState.userRole === 'owner';
+          document.getElementById('roleText').innerText = isOwner ? 'المالك (كامل الصلاحيات)' : 'عامل الوردية';
+          toggleRoleBtn.className = `flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${isOwner ? 'bg-amber-500 text-slate-950 border-amber-400 shadow-md shadow-amber-500/20' : 'bg-emerald-600 text-white border-emerald-500'}`;
+          showToast(`تم التبديل إلى وضع: ${isOwner ? 'المالك (أنور)' : 'عامل الوردية'}`);
+          recalculateAndRender(true);
+        });
+      }
+
+      populateDropdowns();
+      recalculateAndRender(true);
+    });
+  </script>
+</body>
+</html>
